@@ -1,0 +1,182 @@
+import java.util.*;
+
+class User {
+    String username;
+    String password;
+    String profileName;
+    
+    User(String username, String password, String profileName) {
+        this.username = username;
+        this.password = password;
+        this.profileName = profileName;
+    }
+    
+    void updateProfile(String newProfileName, String newPassword) {
+        this.profileName = newProfileName;
+        this.password = newPassword;
+    }
+}
+
+class MCQ {
+    String question;
+    List<String> options;
+    int correctAnswerIndex;
+    
+    MCQ(String question, List<String> options, int correctAnswerIndex) {
+        this.question = question;
+        this.options = options;
+        this.correctAnswerIndex = correctAnswerIndex;
+    }
+    
+    boolean isAnswerCorrect(int selectedAnswer) {
+        return selectedAnswer == correctAnswerIndex;
+    }
+}
+
+class TimerThread extends Thread {
+    private int timeLimit;
+    private boolean timeUp = false;
+
+    TimerThread(int timeLimit) {
+        this.timeLimit = timeLimit;
+    }
+
+    public void run() {
+        try {
+            for (int i = timeLimit; i > 0; i--) {
+                System.out.println("Time remaining: " + i + " seconds.");
+                Thread.sleep(1000);
+            }
+            timeUp = true;
+            System.out.println("\nTime is up! Submitting your answers...");
+        } catch (InterruptedException e) {
+            System.out.println("Timer interrupted.");
+        }
+    }
+
+    public boolean isTimeUp() {
+        return timeUp;
+    }
+}
+
+public class MCQTest {
+    static User loggedInUser;
+    static List<MCQ> questions = new ArrayList<>();
+    static Scanner scanner = new Scanner(System.in);
+
+    public static void main(String[] args) {
+        initializeDummyUsers();
+        initializeMCQs();
+        
+        // Login
+        if (login()) {
+            startSession();
+        }
+    }
+
+    public static void initializeDummyUsers() {
+        // Dummy users
+        loggedInUser = new User("john_doe", "password123", "John Doe");
+    }
+
+    public static void initializeMCQs() {
+        // Initialize some dummy MCQs
+        questions.add(new MCQ("What is the capital of France?", 
+                              Arrays.asList("Berlin", "Madrid", "Paris", "Rome"), 
+                              2));
+        questions.add(new MCQ("Which is the largest planet in our solar system?", 
+                              Arrays.asList("Earth", "Mars", "Jupiter", "Saturn"), 
+                              2));
+    }
+
+    public static boolean login() {
+        System.out.print("Enter Username: ");
+        String username = scanner.nextLine();
+        
+        System.out.print("Enter Password: ");
+        String password = scanner.nextLine();
+
+        if (username.equals(loggedInUser.username) && password.equals(loggedInUser.password)) {
+            System.out.println("Login successful! Welcome " + loggedInUser.profileName + ".");
+            return true;
+        } else {
+            System.out.println("Invalid username or password.");
+            return false;
+        }
+    }
+
+    public static void startSession() {
+        boolean sessionActive = true;
+        
+        while (sessionActive) {
+            System.out.println("\nSelect an option:");
+            System.out.println("1. Update Profile and Password");
+            System.out.println("2. Start MCQ Test");
+            System.out.println("3. Logout");
+
+            int choice = scanner.nextInt();
+            scanner.nextLine();  // Consume newline after nextInt
+
+            switch (choice) {
+                case 1:
+                    updateProfileAndPassword();
+                    break;
+                case 2:
+                    startMCQTest();
+                    break;
+                case 3:
+                    sessionActive = false;
+                    logout();
+                    break;
+                default:
+                    System.out.println("Invalid choice. Try again.");
+            }
+        }
+    }
+
+    public static void updateProfileAndPassword() {
+        System.out.println("\nUpdate Profile and Password");
+        System.out.print("Enter new profile name: ");
+        String newProfileName = scanner.nextLine();
+
+        System.out.print("Enter new password: ");
+        String newPassword = scanner.nextLine();
+
+        loggedInUser.updateProfile(newProfileName, newPassword);
+        System.out.println("Profile and password updated successfully!");
+    }
+
+    public static void startMCQTest() {
+        TimerThread timer = new TimerThread(30); // 30-second timer for the test
+        timer.start();
+
+        int score = 0;
+
+        for (int i = 0; i < questions.size(); i++) {
+            if (timer.isTimeUp()) break;
+            MCQ question = questions.get(i);
+
+            System.out.println("\n" + (i + 1) + ". " + question.question);
+            for (int j = 0; j < question.options.size(); j++) {
+                System.out.println((j + 1) + ". " + question.options.get(j));
+            }
+
+            int selectedAnswer = scanner.nextInt();
+            scanner.nextLine();  // Consume newline
+
+            if (question.isAnswerCorrect(selectedAnswer - 1)) {
+                score++;
+            }
+
+            if (timer.isTimeUp()) {
+                break;
+            }
+        }
+
+        System.out.println("\nTest completed! Your score is: " + score + "/" + questions.size());
+    }
+
+    public static void logout() {
+        System.out.println("You have logged out. Thank you for using the system.");
+    }
+}
